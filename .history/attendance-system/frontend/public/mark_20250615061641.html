@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Verify Person</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #00b4db, #0083b0, #43cea2, #185a9d);
+      background-size: 400% 400%;
+      animation: animateBG 15s ease infinite;
+      color: #fff;
+    }
+
+    @keyframes animateBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .form-container {
+      background: rgba(255, 255, 255, 0.12);
+      padding: 2.5rem 3rem;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+      width: 350px;
+      text-align: left;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #fff;
+      text-shadow: 1px 1px 5px rgba(0,0,0,0.2);
+    }
+
+    label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: 600;
+    }
+
+    input[type="text"],
+    input[type="file"] {
+      width: 100%;
+      margin-top: 0.5rem;
+      padding: 0.6rem;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+    }
+
+    button {
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: 0.8rem;
+      background: linear-gradient(90deg, #ff416c, #ff4b2b);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(255, 65, 108, 0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 20px rgba(255, 65, 108, 0.4);
+    }
+
+    #attendanceResult {
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: bold;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>🕵️‍♂️ Verify Person</h2>
+    <form id="attendanceForm" enctype="multipart/form-data">
+      <label>Person ID:</label>
+      <input type="text" name="id" required>
+
+      <label>Full Name:</label>
+      <input type="text" name="name" required>
+
+      <label>Department:</label>
+      <input type="text" name="department" required>
+
+      <label>Upload Image:</label>
+      <input type="file" name="image" accept="image/*" required>
+
+      <button type="submit">✅ Verify</button>
+    </form>
+    <p id="attendanceResult"></p>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

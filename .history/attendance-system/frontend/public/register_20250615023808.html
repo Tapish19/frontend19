@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register Student</title>
+</head>
+<body>
+  <h2>Student Registration</h2>
+  <form id="registerForm" enctype="multipart/form-data"> <!-- ✅ updated ID -->
+    <label>Name:</label>
+    <input type="text" name="name" required><br>
+
+    <label>Enrollment ID:</label>
+    <input type="text" name="enrollment_id" required><br>
+
+    <label>Email:</label>
+    <input type="email" name="email" required><br>
+
+    <label>Course:</label>
+    <input type="text" name="course" required><br>
+
+    <label>Profile Image:</label>
+    <input type="file" name="profileImage" accept="image/*" required><br>
+
+    <button type="submit">Register</button>
+  </form>
+
+  <p id="regResult"></p> <!-- ✅ added result paragraph -->
+
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+
+      try {
+        const res = await fetch('http://localhost:3000/register', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        document.getElementById('regResult').innerText = data.message;
+      } catch (err) {
+        document.getElementById('regResult').innerText = 'Error: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>

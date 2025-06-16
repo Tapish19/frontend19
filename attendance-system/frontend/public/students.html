@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Verified Persons</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: #232526; /* Solid dark background */
+      color: #fff;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #ffffff;
+    }
+
+    button {
+      display: block;
+      margin: 1rem auto;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+      background-color: #2d2f31;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      color: #f1f1f1;
+    }
+
+    th {
+      background-color: #3b3e42;
+      font-weight: bold;
+    }
+
+    tr:nth-child(even) {
+      background-color: #313335;
+    }
+
+    tr:hover {
+      background-color: #3f4245;
+    }
+
+    img {
+      height: 60px;
+      border-radius: 6px;
+      border: 2px solid #fff;
+    }
+
+    #studentError {
+      text-align: center;
+      margin-top: 1rem;
+      font-weight: bold;
+      color: #ff7675;
+    }
+
+    a {
+      display: block;
+      text-align: center;
+      margin-top: 2rem;
+      color: #bbb;
+      text-decoration: none;
+      font-size: 1.1rem;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>👥 Verified Persons</h2>
+  <button onclick="fetchStudents()">🔄 Refresh List</button>
+
+  <table id="studentTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>ID</th>
+        <th>Email</th>
+        <th>Department</th>
+        <th>Image</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <p id="studentError"></p>
+
+  <a href="Home.html">⬅ Back to Home</a>
+
+  <script>
+    async function fetchStudents() {
+      const tbody = document.querySelector('#studentTable tbody');
+      tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+
+      try {
+        const res = await fetch('http://localhost:3000/students');
+        const students = await res.json();
+
+        tbody.innerHTML = '';
+        students.forEach(student => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${student.name}</td>
+            <td>${student.enrollment_id}</td>
+            <td>${student.email}</td>
+            <td>${student.course}</td>
+            <td><img src="data:image/jpeg;base64,${student.profileImage}" /></td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (err) {
+        document.getElementById('studentError').innerText = '⚠️ Failed to load persons: ' + err.message;
+      }
+    }
+
+    fetchStudents();
+  </script>
+</body>
+</html>

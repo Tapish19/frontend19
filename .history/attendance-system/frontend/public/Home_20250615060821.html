@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Attendance System</title>
+  <link rel="stylesheet" href="./main.css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      padding: 2rem;
+      min-height: 100vh;
+      background: linear-gradient(270deg, #4e54c8, #8f94fb, #43cea2, #185a9d, #ff512f, #dd2476);
+      background-size: 1200% 1200%;
+      animation: gradientBG 15s ease infinite;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 3rem;
+      text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .button-container {
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    button {
+      padding: 1.5rem 2.5rem;
+      font-size: 1.3rem;
+      border-radius: 16px;
+      border: none;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+      backdrop-filter: blur(10px);
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+    }
+
+    .register-btn {
+      background: linear-gradient(90deg, #4e54c8, #8f94fb);
+    }
+
+    .verify-btn {
+      background: linear-gradient(90deg, #43cea2, #185a9d);
+    }
+
+    .view-btn {
+      background: linear-gradient(90deg, #ff512f, #dd2476);
+    }
+  </style>
+</head>
+<body>
+  <h1>🎓 Attendance System</h1>
+  <div class="button-container">
+    <a href="register.html">
+      <button class="register-btn">📝 Register</button>
+    </a>
+    <a href="mark.html">
+      <button class="verify-btn">🕵️‍♂️ Verify Person</button>
+    </a>
+    <a href="students.html">
+      <button class="view-btn">👁️ View</button>
+    </a>
+  </div>
+</body>
+</html>

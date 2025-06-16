@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register Student</title>
+</head>
+<body>
+  <h2>Student Registration</h2>
+  <form id="registerForm" enctype="multipart/form-data">
+    <label>Name:</label>
+    <input type="text" name="name" required><br>
+
+    <label>Enrollment ID:</label>
+    <input type="text" name="enrollment_id" required><br>
+
+    <label>Email:</label>
+    <input type="email" name="email" required><br>
+
+    <label>Course:</label>
+    <input type="text" name="course" required><br>
+
+    <label>Profile Image:</label>
+    <input type="file" name="profileImage" accept="image/*" required><br>
+
+    <button type="submit">Register</button>
+  </form>
+
+  <p id="regResult"></p>
+
+  <!-- ✅ External script only -->
+  <script src="script.js"></script>
+</body>
+</html>

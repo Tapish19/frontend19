@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register Student</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      background-size: 400% 400%;
+      animation: gradientMove 15s ease infinite;
+      color: #333;
+    }
+
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .form-container {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 2.5rem 3rem;
+      border-radius: 20px;
+      backdrop-filter: blur(15px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+      width: 350px;
+      text-align: left;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #fff;
+      text-shadow: 1px 1px 5px rgba(0,0,0,0.2);
+    }
+
+    label {
+      display: block;
+      margin-top: 1rem;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="file"] {
+      width: 100%;
+      margin-top: 0.5rem;
+      padding: 0.6rem;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+    }
+
+    button {
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: 0.8rem;
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(0, 114, 255, 0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 20px rgba(0, 114, 255, 0.4);
+    }
+
+    #regResult {
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: bold;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>🎓 Student Registration</h2>
+    <form id="registerForm" enctype="multipart/form-data">
+      <label>Name:</label>
+      <input type="text" name="name" required>
+
+      <label>Enrollment ID:</label>
+      <input type="text" name="enrollment_id" required>
+
+      <label>Email:</label>
+      <input type="email" name="email" required>
+
+      <label>Course:</label>
+      <input type="text" name="course" required>
+
+      <label>Profile Image:</label>
+      <input type="file" name="profileImage" accept="image/*" required>
+
+      <button type="submit">✨ Register</button>
+    </form>
+    <p id="regResult"></p>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

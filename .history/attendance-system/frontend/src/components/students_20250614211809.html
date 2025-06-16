@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Student List</title>
+  <link rel="stylesheet" href="./styles/main.css" />
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    img {
+      height: 60px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Registered Students</h2>
+  <button onclick="fetchStudents()">🔄 Refresh List</button>
+
+  <table id="studentTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Enrollment ID</th>
+        <th>Email</th>
+        <th>Course</th>
+        <th>Image</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <p id="studentError" style="color: red;"></p>
+  <a href="index.html">⬅ Go to Registration</a>
+
+  <script>
+    async function fetchStudents() {
+      const tbody = document.querySelector('#studentTable tbody');
+      tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+
+      try {
+        const res = await fetch('/students');
+        const students = await res.json();
+
+        tbody.innerHTML = '';
+        students.forEach(student => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${student.name}</td>
+            <td>${student.enrollment_id}</td>
+            <td>${student.email}</td>
+            <td>${student.course}</td>
+            <td><img src="data:image/jpeg;base64,${student.profileImage}" /></td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (err) {
+        document.getElementById('studentError').innerText = 'Failed to load students: ' + err.message;
+      }
+    }
+
+    fetchStudents();
+  </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<form id="studentForm">
+  <input type="text" id="name" placeholder="Name"><br>
+  <input type="email" id="email" placeholder="Email"><br>
+  <input type="text" id="roll" placeholder="Roll Number"><br>
+  <input type="file" id="profile"><br>
+  <button type="submit">Register</button>
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  const form = document.getElementById('studentForm');
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const formData = new FormData();
+    formData.append('ProfileImage', document.getElementById('profile').files[0]);
+    formData.append('Name', document.getElementById('name').value);
+    formData.append('Email', document.getElementById('email').value);
+    formData.append('RollNumber', document.getElementById('roll').value);
+
+    axios.post('http://localhost:5000/Registration', formData)
+      .then(res => console.log(res.data))
+      .catch(err => console.error('Error registering student:', err));
+  });
+</script>

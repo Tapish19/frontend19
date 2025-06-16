@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎓 Register Student</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #e0f7fa, #e1bee7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    form {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      width: 300px;
+      animation: fadeIn 0.7s ease-in-out;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="file"] {
+      padding: 10px 14px;
+      border: 2px solid #ccc;
+      border-radius: 12px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      border-color: #7e57c2;
+    }
+
+    button {
+      background-color: #7e57c2;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+      background-color: #5e35b1;
+      transform: scale(1.05);
+    }
+
+    #regResult {
+      text-align: center;
+      font-size: 16px;
+      margin-top: 15px;
+      color: #4a148c;
+      font-weight: bold;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <form id="registerForm" enctype="multipart/form-data">
+    <h2 style="text-align:center; margin-bottom: 10px;">📋 Student Registration</h2>
+    <input type="text" name="name" placeholder="👤 Name" required>
+    <input type="text" name="enrollment_id" placeholder="🎫 ID" required>
+    <input type="email" name="email" placeholder="📧 Email" required>
+    <input type="text" name="course" placeholder="📚 Department" required>
+    <input type="file" name="profileImage" required>
+    <button type="submit">🚀 Register</button>
+  </form>
+
+  <p id="regResult"></p>
+
+  <script src="script.js"></script>
+</body>
+</html>

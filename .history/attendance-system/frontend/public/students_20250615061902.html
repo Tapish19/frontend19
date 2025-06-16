@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Verified Persons</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2, #43cea2, #185a9d);
+      background-size: 400% 400%;
+      animation: animateBG 18s ease infinite;
+      min-height: 100vh;
+      color: #fff;
+      padding: 2rem;
+    }
+
+    @keyframes animateBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    button {
+      display: block;
+      margin: 1rem auto;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      background: linear-gradient(90deg, #43cea2, #185a9d);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      color: #fff;
+    }
+
+    th {
+      background-color: rgba(0, 0, 0, 0.3);
+      font-weight: bold;
+    }
+
+    tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    tr:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    img {
+      height: 60px;
+      border-radius: 8px;
+      border: 2px solid #fff;
+    }
+
+    #studentError {
+      text-align: center;
+      margin-top: 1rem;
+      font-weight: bold;
+      color: #ffdddd;
+    }
+
+    a {
+      display: block;
+      text-align: center;
+      margin-top: 2rem;
+      color: #fff;
+      text-decoration: none;
+      font-size: 1.1rem;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>👥 Verified Persons</h2>
+  <button onclick="fetchStudents()">🔄 Refresh List</button>
+
+  <table id="studentTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>ID</th>
+        <th>Email</th>
+        <th>Department</th>
+        <th>Image</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <p id="studentError"></p>
+
+  <a href="Home.html">⬅ Back to Home</a>
+
+  <script>
+    async function fetchStudents() {
+      const tbody = document.querySelector('#studentTable tbody');
+      tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+
+      try {
+        const res = await fetch('http://localhost:3000/students');
+        const students = await res.json();
+
+        tbody.innerHTML = '';
+        students.forEach(student => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${student.name}</td>
+            <td>${student.enrollment_id}</td>
+            <td>${student.email}</td>
+            <td>${student.course}</td>
+            <td><img src="data:image/jpeg;base64,${student.profileImage}" /></td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (err) {
+        document.getElementById('studentError').innerText = '⚠️ Failed to load persons: ' + err.message;
+      }
+    }
+
+    fetchStudents();
+  </script>
+</body>
+</html>

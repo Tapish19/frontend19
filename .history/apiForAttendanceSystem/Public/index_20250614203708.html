@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Registration</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-width: 400px;
+    }
+    input, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Register Student</h2>
+
+  <form id="registerForm" enctype="multipart/form-data">
+    <input type="text" name="name" placeholder="Full Name" required />
+    <input type="text" name="enrollment_id" placeholder="Enrollment ID" required />
+    <input type="email" name="email" placeholder="Email" required />
+    <input type="text" name="course" placeholder="Course" required />
+    <input type="file" name="ProfileImage" accept="image/*" required />
+    <button type="submit">Register</button>
+  </form>
+
+  <p id="responseMsg"></p>
+
+  <script>
+    const form = document.getElementById('registerForm');
+    const responseMsg = document.getElementById('responseMsg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch('/Registration', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          responseMsg.innerText = '✅ ' + data.message;
+          responseMsg.style.color = 'green';
+          form.reset();
+        } else {
+          responseMsg.innerText = '❌ ' + (data.message || 'Registration failed');
+          responseMsg.style.color = 'red';
+        }
+
+      } catch (err) {
+        console.error(err);
+        responseMsg.innerText = '❌ Error: ' + err.message;
+        responseMsg.style.color = 'red';
+      }
+    });
+  </script>
+
+</body>
+</html>
