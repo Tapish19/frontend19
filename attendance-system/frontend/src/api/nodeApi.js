@@ -1,15 +1,26 @@
-async function markAttendance(formData) {
-  try {
-    const res = await fetch('http://localhost:5000/mark-attendance', {
-      method: 'POST',
-      body: formData
-    });
+const NODE_API_BASE_URL = process.env.REACT_APP_NODE_API_URL || 'http://localhost:3000';
 
-    if (!res.ok) throw new Error('Attendance failed');
+async function request(url, options = {}) {
+  const response = await fetch(url, options);
 
-    return await res.json();
-  } catch (err) {
-    console.error('❌ Error marking attendance:', err);
-    throw err;
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Request failed with status ${response.status}`);
   }
+
+  return response.json();
+}
+
+export async function markAttendance(formData) {
+  return request(`${NODE_API_BASE_URL}/mark-attendance`, {
+    method: 'POST',
+    body: formData
+  });
+}
+
+export async function registerStudent(formData) {
+  return request(`${NODE_API_BASE_URL}/Registration`, {
+    method: 'POST',
+    body: formData
+  });
 }
