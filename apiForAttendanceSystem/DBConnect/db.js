@@ -3,17 +3,27 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+export const isDbConnected = () => mongoose.connection.readyState === 1;
+
 const connectDB = async () => {
+  const mongoUri = process.env.MONGODB_URI;
+
+  if (!mongoUri) {
+    console.warn('MONGODB_URI is not set. Starting server without a database connection.');
+    return false;
+  }
+
   try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 10000, // Increase timeout to 10 seconds
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 10000,
     });
+
     console.log('MongoDB connected');
+    return true;
+
   } catch (error) {
-    console.error('MongoDB connection error:', error);
-    process.exit(1);
+    console.error('MongoDB connection error:', error.message);
+    return false;
   }
 };
 
