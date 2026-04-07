@@ -54,13 +54,25 @@ def draw_faces(image, faces):
 
 def init_super_res_model():
     """Initialize and return the DNN super resolution model."""
+    if not hasattr(cv2, "dnn_superres"):
+        logging.warning(
+            "OpenCV dnn_superres module is unavailable; continuing without super resolution."
+        )
+        return None
     sr = cv2.dnn_superres.DnnSuperResImpl_create()
     if not os.path.exists(SUPER_RES_MODEL_PATH):
         logging.error(f"Super resolution model not found at {SUPER_RES_MODEL_PATH}.")
         return None
-    sr.readModel(SUPER_RES_MODEL_PATH)
-    sr.setModel("edsr", 4)  # Using EDSR with a 4x scale factor
-    return sr
+    try:
+        sr.readModel(SUPER_RES_MODEL_PATH)
+        sr.setModel("edsr", 4)  # Using EDSR with a 4x scale factor
+        return sr
+    except Exception as err:
+        logging.exception(
+            "Failed to initialize super resolution model; continuing without it: %s",
+            err,
+        )
+        return None
 
 # Initialize super resolution model if enabled
 super_res_model = init_super_res_model() if USE_SUPER_RESOLUTION else None
