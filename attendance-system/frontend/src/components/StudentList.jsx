@@ -28,17 +28,29 @@ function StudentList() {
   }, []);
 
   return (
-    <section>
-      <h2>Students</h2>
-      {status && <p>{status}</p>}
-      {!status && students.length === 0 && <p>No students found.</p>}
-      <ul>
-        {students.map((student) => (
-          <li key={student._id || student.id || student.enrollment_id}>
-            {student.name} ({student.enrollment_id || student.Id || 'N/A'})
-          </li>
-        ))}
-      </ul>
+    <section className="panel">
+      <h2>Student Directory</h2>
+      {status && <p className="message info">{status}</p>}
+      {!status && students.length === 0 && <p className="empty-state">No students found yet.</p>}
+
+      {!status && students.length > 0 && (
+        <table className="student-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Enrollment ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            {students.map((student) => (
+              <tr key={student._id || student.id || student.enrollment_id}>
+                <td>{student.name}</td>
+                <td>{student.enrollment_id || student.Id || 'N/A'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </section>
   );
 }
