@@ -13,21 +13,15 @@ const port = process.env.PORT || 3000;
 
 const allowedOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((o) => o.trim())
   .filter(Boolean);
 
-app.use(
-  cors({
-    origin: allowedOrigins.length ? allowedOrigins : true,
-  }),
-);
-
+app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
+app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
+app.get('/', (_req, res) => res.status(200).json({ status: 'ok', message: 'Attendance API is running' }));
 
 app.use(studentRoutes);
 app.use(attendanceRoutes);
@@ -39,9 +33,7 @@ app.use((err, _req, res, _next) => {
 
 const start = async () => {
   await connectDB();
-  app.listen(port, () => {
-    console.log(`API server listening on port ${port}`);
-  });
+  app.listen(port, () => console.log(`API server listening on port ${port}`));
 };
 
 start();
