@@ -3,57 +3,60 @@ import Attendance from '../models/AttendanceModel.js';
 import QueryFaces from '../models/QueryFacesModel.js';
 import dotenv from 'dotenv';
 import multer from 'multer';
-import cloudinary from 'cloudinary';
+import { v2 as cloudinary } from 'cloudinary';
 
 dotenv.config();
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+export const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) return cb(new Error('Only image files are allowed'));
+    cb(null, true);
+  },
+});
 
-cloudinary.v2.config({
-    cloud_name: process.env.Cloud_name,
-    api_key: process.env.API_key,
-    api_secret: process.env.API_secret
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 export const markAttendance = async (req, res) => {
-    try {
-        const { id, name, course } = req.body;
-        const image = req.file.buffer.toString('base64'); // Convert image buffer to base64
-
-        // Upload image to Cloudinary
-        const uploadResponse = await cloudinary.v2.uploader.upload(`data:image/jpeg;base64,${image}`);
-
-        // Automatically set the current time and date
-        const time = new Date().toLocaleTimeString();
-        const date = new Date().toLocaleDateString();
-
-        // Prepare payload for external API
-        const payload = {
-            id: id,
-            name: name,
-            image: uploadResponse.secure_url, // Send Cloudinary image URL
-            course: course
-        };
-
-        // Log the payload
-        console.log('Payload:', payload);
-
-        // Call external API using credentials from .env file
-        const response = await axios.post(process.env.EXTERNAL_API_URL, payload);
-
-        // Save attendance record to the database
-        const attendance = new Attendance({ time, date, id, name, image: uploadResponse.secure_url, course });
-        await attendance.save();
-
-        // Save query face record to the database
-        const queryFace = new QueryFaces({ time, date, id, name, image: uploadResponse.secure_url, course });
-        await queryFace.save();
-
-        res.status(200).json({ message: 'Attendance marked successfully', data: response.data });
-    } catch (error) {
-        res.status(500).json({ message: 'Error marking attendance', error: error.message });
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Image file is required' });
     }
-};
 
-export { upload };
+    const { id, name, course } = req.body;
+    if (!id || !name || !course) {
+      return res.status(400).json({ message: 'id, name, and course are required' });
+    }
+
+    const base64Image = req.file.buffer.toString('base64');
+    const uploadResponse = await cloudinary.uploader.upload(
+      `data:${req.file.mimetype};base64,${base64Image}`
+    );
+
+    const time = new Date().toLocaleTimeString();
+    const date = new Date().toLocaleDateString();
+
+    const externalApiUrl = process.env.EXTERNAL_API_URL;
+    if (!externalApiUrl) {
+      return res.status(500).json({ message: 'EXTERNAL_API_URL is not configured' });
+    }
+
+    const response = await axios.post(externalApiUrl, {
+      id, name, course, image: uploadResponse.secure_url,
+    });
+
+    await new Attendance({ time, date, id, name, image: uploadResponse.secure_url, course }).save();
+    await new QueryFaces({ time, date, id, name, image: uploadResponse.secure_url, course }).save();
+
+    res.status(200).json({ message: 'Attendance marked successfully', data: response.data });
+  } catch (error) {
+    console.error('markAttendance error:', error);
+    res.status(500).json({ message: 'Error marking attendance', error: error.message });
+  }
+};
