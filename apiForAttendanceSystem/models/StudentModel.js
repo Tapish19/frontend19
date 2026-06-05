@@ -3,29 +3,17 @@ import AutoIncrementFactory from 'mongoose-sequence';
 
 const AutoIncrement = AutoIncrementFactory(mongoose);
 
-const studentSchema = new mongoose.Schema({
-    Id: {
-        type: Number,
-        unique: true,
-    },
-    enrollment_id: {
-        type: String,
-        required: true
-    },
-    name: {
-        type: String,
-        required: true
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true
-    },
-    profileImage: {
-        type: String,
-        required: true
-    }
-}, { timestamps: true });
+const studentSchema = new mongoose.Schema(
+  {
+    Id: { type: Number, unique: true },
+    enrollment_id: { type: String, required: true, unique: true },
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    course: { type: String, required: true },   // was missing — data was being silently dropped
+    profileImage: { type: String, required: true },
+  },
+  { timestamps: true }
+);
 
 studentSchema.plugin(AutoIncrement, { inc_field: 'Id', start_seq: 1 });
 
