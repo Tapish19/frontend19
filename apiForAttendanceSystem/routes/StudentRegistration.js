@@ -3,10 +3,7 @@ import { registerStudent, getStudents, upload } from '../controllers/StudentCont
 
 const router = express.Router();
 
-// Route to register a student
-router.post('/Registration', upload.single('ProfileImage'), registerStudent);
-
-// Route to get all students
+router.post('/registration', upload.single('profileImage'), registerStudent);
 router.get('/students', getStudents);
 
 export default router;
