@@ -2,60 +2,77 @@ import { useState } from 'react';
 import { markAttendance } from '../api/nodeApi';
 
 function AttendanceForm() {
-  const [form, setForm] = useState({ id: '', name: '', course: '', image: null });
+  const EMPTY = { id: '', name: '', course: '', image: null };
+  const [form, setForm] = useState(EMPTY);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('info');
+  const [loading, setLoading] = useState(false);
+
   const onChange = (e) => {
     const { name, value, files } = e.target;
-    setForm((prev) => ({ ...prev, [name]: files ? files[0] : value }));
+    setForm((p) => ({ ...p, [name]: files ? files[0] : value }));
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    setMessage('Submitting attendance...');
+    if (!form.image) { setMessage('Photo is required'); setMessageType('error'); return; }
+
+    setLoading(true);
+    setMessage('Submitting...');
     setMessageType('info');
 
     try {
-      const formData = new FormData();
-      formData.append('id', form.id);
-      formData.append('name', form.name);
-      formData.append('course', form.course);
-      if (form.image) formData.append('image', form.image);
+      const fd = new FormData();
+      fd.append('id', form.id);
+      fd.append('name', form.name);
+      fd.append('course', form.course);
+      fd.append('image', form.image);
 
-      const response = await markAttendance(formData);
-      setMessage(response?.message || 'Attendance marked successfully.');
-      setMessageType('success');
-    } catch (error) {
-      setMessage(error.message || 'Failed to mark attendance.');
+      const res = await markAttendance(fd);
+      const result = res?.data;
+
+      if (result?.matched) {
+        setMessage(`✓ ${result.student_name} recognised (${(result.similarity * 100).toFixed(1)}% match)`);
+        setMessageType('success');
+      } else {
+        setMessage(result?.message || 'No face match found.');
+        setMessageType('error');
+      }
+      setForm(EMPTY);
+    } catch (err) {
+      setMessage(err.message || 'Failed to mark attendance.');
       setMessageType('error');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <section className="panel">      
+    <section className="panel">
       <h2>Mark Attendance</h2>
       <form onSubmit={onSubmit}>
         <div className="form-grid">
           <div className="field">
-            <label htmlFor="attendance-id">Student ID</label>
-            <input id="attendance-id" name="id" placeholder="e.g. STU-102" value={form.id} onChange={onChange} required />
+            <label>Student ID</label>
+            <input name="id" placeholder="STU-102" value={form.id} onChange={onChange} required />
           </div>
           <div className="field">
-            <label htmlFor="attendance-name">Student Name</label>
-            <input id="attendance-name" name="name" placeholder="e.g. Sarah Khan" value={form.name} onChange={onChange} required />
+            <label>Student Name</label>
+            <input name="name" placeholder="Sarah Khan" value={form.name} onChange={onChange} required />
           </div>
           <div className="field">
-            <label htmlFor="attendance-course">Course</label>
-            <input id="attendance-course" name="course" placeholder="e.g. Computer Science" value={form.course} onChange={onChange} required />
+            <label>Course</label>
+            <input name="course" placeholder="Computer Science" value={form.course} onChange={onChange} required />
           </div>
           <div className="field">
-            <label htmlFor="attendance-image">Photo</label>
-            <input id="attendance-image" name="image" type="file" accept="image/*" onChange={onChange} required />
+            <label>Photo</label>
+            <input name="image" type="file" accept="image/*" onChange={onChange} required />
           </div>
         </div>
-
         <div className="button-row">
-          <button className="primary-btn" type="submit">Submit Attendance</button>
+          <button className="primary-btn" type="submit" disabled={loading}>
+            {loading ? 'Processing...' : 'Submit Attendance'}
+          </button>
         </div>
       </form>
       {message && <p className={`message ${messageType}`}>{message}</p>}
