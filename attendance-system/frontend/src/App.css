@@ -155,3 +155,31 @@ body {
   .button-row { justify-content: stretch; }
   .primary-btn { width: 100%; }
 }
+
+.helper-text {
+  color: var(--muted);
+  margin-top: -6px;
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+
+.results-list {
+  margin-top: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  padding: 16px;
+}
+
+.results-list h3 {
+  margin: 0 0 10px;
+}
+
+.results-list ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.results-list li + li {
+  margin-top: 8px;
+}

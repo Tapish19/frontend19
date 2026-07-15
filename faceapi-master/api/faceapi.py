@@ -2,7 +2,6 @@ import os
 import cv2
 import numpy as np
 from insightface.app import FaceAnalysis
-from sklearn.preprocessing import normalize
 import faiss
 import requests
 from .mongo_handler import get_all_students
@@ -36,6 +35,15 @@ RE_RUN_EMBEDDING = True           # If True, re-run embedding extraction on crop
 MIN_FACE_SIZE = 50                # Minimum face crop size (in pixels) before applying super resolution
 MIN_IMAGE_DIM = 640               # Minimum width/height of entire image; below this, upscale the image
 SUPER_RES_MODEL_PATH = settings.SUPER_RES_MODEL_PATH  # Path to your EDSR_x4.pb model
+
+
+def normalize_embedding(embedding):
+    """Return a L2-normalized embedding without importing scikit-learn/SciPy."""
+    embedding = np.asarray(embedding, dtype=np.float32)
+    norm = np.linalg.norm(embedding)
+    if norm == 0:
+        return embedding
+    return embedding / norm
 
 def debug_save_image(img, name):
     """Save an image to the debug folder if debugging is enabled."""
@@ -249,7 +257,7 @@ def get_face_embedding(model, face_crop):
     results = model.get(face_crop)
     if results and hasattr(results[0], 'embedding'):
         embedding = results[0].embedding
-        return normalize(embedding.reshape(1, -1))[0]
+        return normalize_embedding(embedding)
     return None
 
 def extract_embeddings(model, image, use_tile_detection=False, scales=[1.0, 1.5, 2.0, 3.0, 4.0],
@@ -296,10 +304,10 @@ def extract_embeddings(model, image, use_tile_detection=False, scales=[1.0, 1.5,
             embedding = get_face_embedding(model, cropped_face)
             # Fallback to detector's provided embedding if re-run fails
             if embedding is None and hasattr(face, 'embedding'):
-                embedding = normalize(face.embedding.reshape(1, -1))[0]
+                embedding = normalize_embedding(face.embedding)
         else:
             embedding = face.embedding
-            embedding = normalize(embedding.reshape(1, -1))[0]
+            embedding = normalize_embedding(embedding)
         if embedding is not None:
             embeddings.append(embedding)
     return faces, embeddings
@@ -348,15 +356,13 @@ def download_image(url, retries=3, delay=5):
                 return None
 def process_face_image(name, enrollment_id, image: Image.Image, use_tile_detection=False):
     """
-    Process a group query image for a given student.
-    For each detected face in the query image, compare it against the known student database.
-    Attendance is recorded only for recognized (registered) students.
+    Process one group/class image and mark every recognized registered student present.
     Unknown faces are not marked as present or absent.
     Optionally saves face crop images for manual inspection.
     """
     logging.info("Initializing Face Recognition Model for query image...")
     model = FaceAnalysis()
-    model.prepare(ctx_id=0, det_size=(640, 640))
+    model.prepare(ctx_id=-1, det_size=(640, 640))
 
     logging.info("Fetching known faces from MongoDB for comparison...")
     mongo_url = os.getenv('MONGO_URL')
@@ -430,10 +436,10 @@ def process_face_image(name, enrollment_id, image: Image.Image, use_tile_detecti
         if RE_RUN_EMBEDDING:
             embedding = get_face_embedding(model, cropped_face)
             if embedding is None and hasattr(face, 'embedding'):
-                embedding = normalize(face.embedding.reshape(1, -1))[0]
+                embedding = normalize_embedding(face.embedding)
         else:
             embedding = face.embedding
-            embedding = normalize(embedding.reshape(1, -1))[0]
+            embedding = normalize_embedding(embedding)
         if embedding is not None:
             embeddings_query.append(embedding)
 
@@ -445,30 +451,61 @@ def process_face_image(name, enrollment_id, image: Image.Image, use_tile_detecti
             "message": f"No faces detected in query image for {name}."
         }
 
-    # For now, only return the result of the first matched face
+    matched_students = []
+    seen_enrollments = set()
+
     for i, embedding in enumerate(embeddings_query):
         matched_name, similarity = find_closest_face(embedding, index, profile_names,
                                                      threshold=HIGH_SIMILARITY_THRESHOLD)
-        if matched_name:
-            logging.info(f"Face {i+1} matched: {matched_name} (Similarity: {similarity:.4f})")
-            attendance = Attendance(
-                name=matched_name,
-                enrollment_number=enrollment_numbers[matched_name],
-                status='present',
-                date=timezone.now().date()
-            )
-            attendance.save()
-            return {
-                "matched": True,
-                "student_name": matched_name,
-                "similarity": float(similarity),
-                "message": f"Face {i+1}: {matched_name} (Similarity: {similarity:.4f})"
-            }
+        if not matched_name:
+            continue
 
-    # No match found for any face
+        enrollment_number = enrollment_numbers[matched_name]
+        if enrollment_number in seen_enrollments:
+            logging.info(
+                "Face %s matched %s again; skipping duplicate attendance row.",
+                i + 1,
+                matched_name,
+            )
+            continue
+
+        logging.info(f"Face {i+1} matched: {matched_name} (Similarity: {similarity:.4f})")
+        attendance = Attendance(
+            name=matched_name,
+            enrollment_number=enrollment_number,
+            status='present',
+            date=timezone.now().date()
+        )
+        attendance.save()
+        seen_enrollments.add(enrollment_number)
+        matched_students.append({
+            "name": matched_name,
+            "enrollment_number": enrollment_number,
+            "student_id": str(student_ids.get(matched_name, "")),
+            "similarity": float(similarity),
+            "face_index": i + 1,
+        })
+
+    if matched_students:
+        first_match = matched_students[0]
+        return {
+            "matched": True,
+            "student_name": first_match["name"],
+            "similarity": first_match["similarity"],
+            "matched_count": len(matched_students),
+            "total_faces_detected": len(embeddings_query),
+            "unmatched_faces": max(len(embeddings_query) - len(matched_students), 0),
+            "matched_students": matched_students,
+            "message": f"Marked attendance for {len(matched_students)} student(s) from one class photo."
+        }
+
     return {
         "matched": False,
         "student_name": None,
         "similarity": None,
-        "message": "No match found for any detected face."
+        "matched_count": 0,
+        "total_faces_detected": len(embeddings_query),
+        "unmatched_faces": len(embeddings_query),
+        "matched_students": [],
+        "message": "No registered students matched any detected face."
     }

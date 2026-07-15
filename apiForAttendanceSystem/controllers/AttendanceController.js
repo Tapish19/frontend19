@@ -29,10 +29,7 @@ export const markAttendance = async (req, res) => {
       return res.status(400).json({ message: 'Image file is required' });
     }
 
-    const { id, name, course } = req.body;
-    if (!id || !name || !course) {
-      return res.status(400).json({ message: 'id, name, and course are required' });
-    }
+    const { id = 'class-photo', name = 'Class photo', course = 'General' } = req.body;
 
     const base64Image = req.file.buffer.toString('base64');
     const uploadResponse = await cloudinary.uploader.upload(
@@ -51,10 +48,27 @@ export const markAttendance = async (req, res) => {
       id, name, course, image: uploadResponse.secure_url,
     });
 
-    await new Attendance({ time, date, id, name, image: uploadResponse.secure_url, course }).save();
+    const matchedStudents = Array.isArray(response.data?.matched_students) ? response.data.matched_students : [];
+
+    if (matchedStudents.length > 0) {
+      await Attendance.insertMany(matchedStudents.map((student) => ({
+        time,
+        date,
+        id: student.enrollment_number || student.student_id || id,
+        name: student.name,
+        image: uploadResponse.secure_url,
+        course,
+      })));
+    }
+
     await new QueryFaces({ time, date, id, name, image: uploadResponse.secure_url, course }).save();
 
-    res.status(200).json({ message: 'Attendance marked successfully', data: response.data });
+    res.status(200).json({
+      message: matchedStudents.length
+        ? `Attendance marked for ${matchedStudents.length} student(s)`
+        : 'No registered students matched the uploaded class photo',
+      data: response.data,
+    });
   } catch (error) {
     console.error('markAttendance error:', error);
     res.status(500).json({ message: 'Error marking attendance', error: error.message });
