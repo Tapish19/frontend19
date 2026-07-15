@@ -11,11 +11,11 @@ const queryFacesSchema = new mongoose.Schema({
     },
     name: {
         type: String,
-        required: true
+        required: false
     },
     id: {
         type: String,
-        required: true
+        required: false
     },
     image: {
         type: String,
@@ -23,7 +23,7 @@ const queryFacesSchema = new mongoose.Schema({
     },
     course: {
         type: String,
-        required: true
+        required: false
     }
 });
 

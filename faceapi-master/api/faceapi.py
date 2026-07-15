@@ -356,9 +356,7 @@ def download_image(url, retries=3, delay=5):
                 return None
 def process_face_image(name, enrollment_id, image: Image.Image, use_tile_detection=False):
     """
-    Process a group query image for a given student.
-    For each detected face in the query image, compare it against the known student database.
-    Attendance is recorded only for recognized (registered) students.
+    Process one group/class image and mark every recognized registered student present.
     Unknown faces are not marked as present or absent.
     Optionally saves face crop images for manual inspection.
     """
@@ -453,30 +451,61 @@ def process_face_image(name, enrollment_id, image: Image.Image, use_tile_detecti
             "message": f"No faces detected in query image for {name}."
         }
 
-    # For now, only return the result of the first matched face
+    matched_students = []
+    seen_enrollments = set()
+
     for i, embedding in enumerate(embeddings_query):
         matched_name, similarity = find_closest_face(embedding, index, profile_names,
                                                      threshold=HIGH_SIMILARITY_THRESHOLD)
-        if matched_name:
-            logging.info(f"Face {i+1} matched: {matched_name} (Similarity: {similarity:.4f})")
-            attendance = Attendance(
-                name=matched_name,
-                enrollment_number=enrollment_numbers[matched_name],
-                status='present',
-                date=timezone.now().date()
-            )
-            attendance.save()
-            return {
-                "matched": True,
-                "student_name": matched_name,
-                "similarity": float(similarity),
-                "message": f"Face {i+1}: {matched_name} (Similarity: {similarity:.4f})"
-            }
+        if not matched_name:
+            continue
 
-    # No match found for any face
+        enrollment_number = enrollment_numbers[matched_name]
+        if enrollment_number in seen_enrollments:
+            logging.info(
+                "Face %s matched %s again; skipping duplicate attendance row.",
+                i + 1,
+                matched_name,
+            )
+            continue
+
+        logging.info(f"Face {i+1} matched: {matched_name} (Similarity: {similarity:.4f})")
+        attendance = Attendance(
+            name=matched_name,
+            enrollment_number=enrollment_number,
+            status='present',
+            date=timezone.now().date()
+        )
+        attendance.save()
+        seen_enrollments.add(enrollment_number)
+        matched_students.append({
+            "name": matched_name,
+            "enrollment_number": enrollment_number,
+            "student_id": str(student_ids.get(matched_name, "")),
+            "similarity": float(similarity),
+            "face_index": i + 1,
+        })
+
+    if matched_students:
+        first_match = matched_students[0]
+        return {
+            "matched": True,
+            "student_name": first_match["name"],
+            "similarity": first_match["similarity"],
+            "matched_count": len(matched_students),
+            "total_faces_detected": len(embeddings_query),
+            "unmatched_faces": max(len(embeddings_query) - len(matched_students), 0),
+            "matched_students": matched_students,
+            "message": f"Marked attendance for {len(matched_students)} student(s) from one class photo."
+        }
+
     return {
         "matched": False,
         "student_name": None,
         "similarity": None,
-        "message": "No match found for any detected face."
+        "matched_count": 0,
+        "total_faces_detected": len(embeddings_query),
+        "unmatched_faces": len(embeddings_query),
+        "matched_students": [],
+        "message": "No registered students matched any detected face."
     }
