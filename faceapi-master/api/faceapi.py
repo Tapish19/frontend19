@@ -2,7 +2,6 @@ import os
 import cv2
 import numpy as np
 from insightface.app import FaceAnalysis
-from sklearn.preprocessing import normalize
 import faiss
 import requests
 from .mongo_handler import get_all_students
@@ -36,6 +35,15 @@ RE_RUN_EMBEDDING = True           # If True, re-run embedding extraction on crop
 MIN_FACE_SIZE = 50                # Minimum face crop size (in pixels) before applying super resolution
 MIN_IMAGE_DIM = 640               # Minimum width/height of entire image; below this, upscale the image
 SUPER_RES_MODEL_PATH = settings.SUPER_RES_MODEL_PATH  # Path to your EDSR_x4.pb model
+
+
+def normalize_embedding(embedding):
+    """Return a L2-normalized embedding without importing scikit-learn/SciPy."""
+    embedding = np.asarray(embedding, dtype=np.float32)
+    norm = np.linalg.norm(embedding)
+    if norm == 0:
+        return embedding
+    return embedding / norm
 
 def debug_save_image(img, name):
     """Save an image to the debug folder if debugging is enabled."""
@@ -249,7 +257,7 @@ def get_face_embedding(model, face_crop):
     results = model.get(face_crop)
     if results and hasattr(results[0], 'embedding'):
         embedding = results[0].embedding
-        return normalize(embedding.reshape(1, -1))[0]
+        return normalize_embedding(embedding)
     return None
 
 def extract_embeddings(model, image, use_tile_detection=False, scales=[1.0, 1.5, 2.0, 3.0, 4.0],
@@ -296,10 +304,10 @@ def extract_embeddings(model, image, use_tile_detection=False, scales=[1.0, 1.5,
             embedding = get_face_embedding(model, cropped_face)
             # Fallback to detector's provided embedding if re-run fails
             if embedding is None and hasattr(face, 'embedding'):
-                embedding = normalize(face.embedding.reshape(1, -1))[0]
+                embedding = normalize_embedding(face.embedding)
         else:
             embedding = face.embedding
-            embedding = normalize(embedding.reshape(1, -1))[0]
+            embedding = normalize_embedding(embedding)
         if embedding is not None:
             embeddings.append(embedding)
     return faces, embeddings
@@ -356,7 +364,7 @@ def process_face_image(name, enrollment_id, image: Image.Image, use_tile_detecti
     """
     logging.info("Initializing Face Recognition Model for query image...")
     model = FaceAnalysis()
-    model.prepare(ctx_id=0, det_size=(640, 640))
+    model.prepare(ctx_id=-1, det_size=(640, 640))
 
     logging.info("Fetching known faces from MongoDB for comparison...")
     mongo_url = os.getenv('MONGO_URL')
@@ -430,10 +438,10 @@ def process_face_image(name, enrollment_id, image: Image.Image, use_tile_detecti
         if RE_RUN_EMBEDDING:
             embedding = get_face_embedding(model, cropped_face)
             if embedding is None and hasattr(face, 'embedding'):
-                embedding = normalize(face.embedding.reshape(1, -1))[0]
+                embedding = normalize_embedding(face.embedding)
         else:
             embedding = face.embedding
-            embedding = normalize(embedding.reshape(1, -1))[0]
+            embedding = normalize_embedding(embedding)
         if embedding is not None:
             embeddings_query.append(embedding)
 
