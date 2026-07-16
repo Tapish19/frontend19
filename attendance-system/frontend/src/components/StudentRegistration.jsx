@@ -76,7 +76,7 @@ function StudentRegistration() {
             <input name="profileImage" type="file" accept="image/*" onChange={onChange} required />
           </div>
         </div>
-        {preview && <img src={preview} alt="Preview" width="120" style={{ borderRadius: '8px', marginTop: '10px' }} />}
+        {preview && <img className="preview-image" src={preview} alt="Selected student preview" />}
         <div className="button-row">
           <button className="primary-btn" type="submit" disabled={loading}>
             {loading ? 'Registering...' : 'Register Student'}
