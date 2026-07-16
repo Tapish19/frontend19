@@ -18,6 +18,14 @@ export async function registerStudent(formData) {
   return request(`${NODE_API_BASE_URL}/registration`, { method: 'POST', body: formData });
 }
 
+export async function confirmAttendance(payload) {
+  return request(`${NODE_API_BASE_URL}/confirm-attendance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getStudents() {
   return request(`${NODE_API_BASE_URL}/students`);
 }
