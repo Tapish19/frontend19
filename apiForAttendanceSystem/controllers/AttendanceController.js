@@ -23,6 +23,21 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+const getTimestamp = () => ({
+  time: new Date().toLocaleTimeString(),
+  date: new Date().toLocaleDateString(),
+});
+
+const normaliseMatchedStudent = (student, index) => ({
+  face_index: student.face_index ?? student.index ?? index,
+  name: student.name || 'Unknown student',
+  enrollment_number: student.enrollment_number || student.enrollment_id || student.student_id || '',
+  similarity: student.similarity ?? student.confidence ?? student.score ?? null,
+  confidence: student.confidence ?? student.similarity ?? student.score ?? null,
+  bounding_box: student.bounding_box || student.bbox || student.box || null,
+  face_crop: student.face_crop || student.crop_url || student.face_image || student.image || null,
+});
+
 export const markAttendance = async (req, res) => {
   try {
     if (!req.file) {
@@ -36,41 +51,79 @@ export const markAttendance = async (req, res) => {
       `data:${req.file.mimetype};base64,${base64Image}`
     );
 
-    const time = new Date().toLocaleTimeString();
-    const date = new Date().toLocaleDateString();
-
     const externalApiUrl = process.env.EXTERNAL_API_URL;
     if (!externalApiUrl) {
       return res.status(500).json({ message: 'EXTERNAL_API_URL is not configured' });
     }
 
     const response = await axios.post(externalApiUrl, {
-      id, name, course, image: uploadResponse.secure_url,
+      id,
+      name,
+      course,
+      image: uploadResponse.secure_url,
     });
 
-    const matchedStudents = Array.isArray(response.data?.matched_students) ? response.data.matched_students : [];
-
-    if (matchedStudents.length > 0) {
-      await Attendance.insertMany(matchedStudents.map((student) => ({
-        time,
-        date,
-        id: student.enrollment_number || student.student_id || id,
-        name: student.name,
-        image: uploadResponse.secure_url,
-        course,
-      })));
-    }
-
-    await new QueryFaces({ time, date, id, name, image: uploadResponse.secure_url, course }).save();
+    const matchedStudents = Array.isArray(response.data?.matched_students)
+      ? response.data.matched_students.map(normaliseMatchedStudent)
+      : [];
 
     res.status(200).json({
       message: matchedStudents.length
-        ? `Attendance marked for ${matchedStudents.length} student(s)`
+        ? `Review ${matchedStudents.length} detected student match(es) before confirming attendance.`
         : 'No registered students matched the uploaded class photo',
-      data: response.data,
+      data: {
+        ...response.data,
+        image: uploadResponse.secure_url,
+        course,
+        matched_students: matchedStudents,
+      },
     });
   } catch (error) {
     console.error('markAttendance error:', error);
-    res.status(500).json({ message: 'Error marking attendance', error: error.message });
+    res.status(500).json({ message: 'Error processing attendance image', error: error.message });
+  }
+};
+
+export const confirmAttendance = async (req, res) => {
+  try {
+    const {
+      image,
+      course = 'General',
+      id = 'class-photo',
+      name = 'Class photo',
+      students = [],
+      matched_students: matchedStudents = [],
+    } = req.body;
+
+    const selectedStudents = Array.isArray(students) && students.length ? students : matchedStudents;
+
+    if (!image) {
+      return res.status(400).json({ message: 'Class photo image URL is required' });
+    }
+
+    if (!Array.isArray(selectedStudents) || selectedStudents.length === 0) {
+      return res.status(400).json({ message: 'Select at least one student to confirm attendance' });
+    }
+
+    const { time, date } = getTimestamp();
+    const attendanceRows = selectedStudents.map((student) => ({
+      time,
+      date,
+      id: student.enrollment_number || student.enrollment_id || student.student_id || student.id || id,
+      name: student.name || 'Unknown student',
+      image,
+      course: student.course || course,
+    }));
+
+    await Attendance.insertMany(attendanceRows);
+    await new QueryFaces({ time, date, id, name, image, course }).save();
+
+    res.status(200).json({
+      message: `Attendance confirmed for ${attendanceRows.length} student(s).`,
+      confirmed_count: attendanceRows.length,
+    });
+  } catch (error) {
+    console.error('confirmAttendance error:', error);
+    res.status(500).json({ message: 'Error confirming attendance', error: error.message });
   }
 };
