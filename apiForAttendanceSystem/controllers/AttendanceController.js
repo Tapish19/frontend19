@@ -30,6 +30,15 @@ const getTimestamp = () => ({
   date: new Date().toLocaleDateString(),
 });
 
+const buildExternalAttendancePayload = ({ file, id, name, course }) => {
+  const payload = new FormData();
+  payload.append('id', id);
+  payload.append('name', name);
+  payload.append('course', course);
+  payload.append('image', new Blob([file.buffer], { type: file.mimetype }), file.originalname || 'attendance-image');
+  return payload;
+};
+
 const normaliseMatchedStudent = (student, index) => ({
   face_index: student.face_index ?? student.index ?? index,
   name: student.name || 'Unknown student',
@@ -94,11 +103,16 @@ export const markAttendance = async (req, res) => {
       `data:${req.file.mimetype};base64,${base64Image}`
     );
 
-    const response = await axios.post(externalApiUrl, {
+    const externalPayload = buildExternalAttendancePayload({
+      file: req.file,
       id,
       name,
       course,
-      image: uploadResponse.secure_url,
+    });
+
+    const response = await axios.post(externalApiUrl, externalPayload, {
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
     });
 
     const matchedStudents = Array.isArray(response.data?.matched_students)
