@@ -5,8 +5,6 @@ from insightface.app import FaceAnalysis
 import faiss
 import requests
 from .mongo_handler import get_all_students
-from .models import Attendance
-from django.utils import timezone
 from PIL import Image
 from io import BytesIO
 import logging
@@ -470,13 +468,6 @@ def process_face_image(name, enrollment_id, image: Image.Image, use_tile_detecti
             continue
 
         logging.info(f"Face {i+1} matched: {matched_name} (Similarity: {similarity:.4f})")
-        attendance = Attendance(
-            name=matched_name,
-            enrollment_number=enrollment_number,
-            status='present',
-            date=timezone.now().date()
-        )
-        attendance.save()
         seen_enrollments.add(enrollment_number)
         matched_students.append({
             "name": matched_name,
