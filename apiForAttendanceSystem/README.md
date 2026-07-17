@@ -37,9 +37,9 @@ This project is a face recognition API that allows for student registration, att
    ```properties
    PORT = 3000
    MONGODB_URI = mongodb+srv://<username>:<password>@cluster0.mongodb.net/
-   Cloud_name = <your_cloudinary_cloud_name>
-   API_key = <your_cloudinary_api_key>
-   API_secret = <your_cloudinary_api_secret>
+   CLOUDINARY_CLOUD_NAME = <your_cloudinary_cloud_name>
+   CLOUDINARY_API_KEY = <your_cloudinary_api_key>
+   CLOUDINARY_API_SECRET = <your_cloudinary_api_secret>
    JWT_SECRET = <your_jwt_secret>
    EXTERNAL_API_URL = http://127.0.0.1:8000/api/process-face-image/
    ```
