@@ -30,6 +30,15 @@ const getTimestamp = () => ({
   date: new Date().toLocaleDateString(),
 });
 
+const buildExternalAttendancePayload = ({ file, id, name, course }) => {
+  const payload = new FormData();
+  payload.append('id', id);
+  payload.append('name', name);
+  payload.append('course', course);
+  payload.append('image', new Blob([file.buffer], { type: file.mimetype }), file.originalname || 'attendance-image');
+  return payload;
+};
+
 const normaliseMatchedStudent = (student, index) => ({
   face_index: student.face_index ?? student.index ?? index,
   name: student.name || 'Unknown student',
@@ -48,12 +57,17 @@ const getExternalApiError = (error) => {
   if (!axios.isAxiosError(error)) return null;
 
   if (error.response) {
+    const upstreamStatus = error.response.status;
     const upstreamMessage = error.response.data?.message || error.response.data?.error || error.response.statusText;
+    const isRateLimited = upstreamStatus === 429;
+
     return {
-      status: 502,
+      status: isRateLimited ? 429 : 502,
       payload: {
-        message: 'Face recognition service failed while processing the attendance image',
-        upstream_status: error.response.status,
+        message: isRateLimited
+          ? 'Face recognition service is rate limited. Please wait a minute before trying again.'
+          : 'Face recognition service failed while processing the attendance image',
+        upstream_status: upstreamStatus,
         upstream_message: upstreamMessage,
       },
     };
@@ -94,11 +108,16 @@ export const markAttendance = async (req, res) => {
       `data:${req.file.mimetype};base64,${base64Image}`
     );
 
-    const response = await axios.post(externalApiUrl, {
+    const externalPayload = buildExternalAttendancePayload({
+      file: req.file,
       id,
       name,
       course,
-      image: uploadResponse.secure_url,
+    });
+
+    const response = await axios.post(externalApiUrl, externalPayload, {
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
     });
 
     const matchedStudents = Array.isArray(response.data?.matched_students)

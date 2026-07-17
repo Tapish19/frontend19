@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { confirmAttendance, markAttendance } from '../api/nodeApi';
 
 function formatConfidence(student) {
@@ -18,6 +18,8 @@ function AttendanceForm() {
   const [pendingAttendance, setPendingAttendance] = useState(null);
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const submittingRef = useRef(false);
+  const confirmingRef = useRef(false);
 
   const onChange = (e) => {
     const { name, value, files } = e.target;
@@ -26,8 +28,10 @@ function AttendanceForm() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    if (submittingRef.current || loading) return;
     if (!form.image) { setMessage('Class photo is required'); setMessageType('error'); return; }
 
+    submittingRef.current = true;
     setLoading(true);
     setMatchedStudents([]);
     setPendingAttendance(null);
@@ -65,6 +69,7 @@ function AttendanceForm() {
       setMessage(err.message || 'Failed to process attendance image.');
       setMessageType('error');
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -101,6 +106,7 @@ function AttendanceForm() {
   };
 
   const onConfirmAttendance = async () => {
+    if (confirmingRef.current || confirming) return;
     const selectedStudents = matchedStudents.filter((student) => student.confirmed);
     if (!pendingAttendance?.image) {
       setMessage('Upload and process a class photo before confirming attendance.');
@@ -113,6 +119,7 @@ function AttendanceForm() {
       return;
     }
 
+    confirmingRef.current = true;
     setConfirming(true);
     setMessage('Confirming attendance records...');
     setMessageType('info');
@@ -130,6 +137,7 @@ function AttendanceForm() {
       setMessage(err.message || 'Failed to confirm attendance.');
       setMessageType('error');
     } finally {
+      confirmingRef.current = false;
       setConfirming(false);
     }
   };
