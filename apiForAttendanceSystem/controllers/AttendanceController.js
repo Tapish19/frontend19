@@ -94,18 +94,11 @@ export const markAttendance = async (req, res) => {
       `data:${req.file.mimetype};base64,${base64Image}`
     );
 
-    const faceApiForm = new FormData();
-    faceApiForm.append('id', id);
-    faceApiForm.append('name', name);
-    faceApiForm.append('course', course);
-    faceApiForm.append(
-      'image',
-      new Blob([req.file.buffer], { type: req.file.mimetype }),
-      req.file.originalname || 'class-photo'
-    );
-
-    const response = await axios.post(externalApiUrl, faceApiForm, {
-      headers: faceApiForm.getHeaders?.(),
+    const response = await axios.post(externalApiUrl, {
+      id,
+      name,
+      course,
+      image: uploadResponse.secure_url,
     });
 
     const matchedStudents = Array.isArray(response.data?.matched_students)
