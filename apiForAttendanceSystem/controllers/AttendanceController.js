@@ -57,12 +57,17 @@ const getExternalApiError = (error) => {
   if (!axios.isAxiosError(error)) return null;
 
   if (error.response) {
+    const upstreamStatus = error.response.status;
     const upstreamMessage = error.response.data?.message || error.response.data?.error || error.response.statusText;
+    const isRateLimited = upstreamStatus === 429;
+
     return {
-      status: 502,
+      status: isRateLimited ? 429 : 502,
       payload: {
-        message: 'Face recognition service failed while processing the attendance image',
-        upstream_status: error.response.status,
+        message: isRateLimited
+          ? 'Face recognition service is rate limited. Please wait a minute before trying again.'
+          : 'Face recognition service failed while processing the attendance image',
+        upstream_status: upstreamStatus,
         upstream_message: upstreamMessage,
       },
     };
