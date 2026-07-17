@@ -4,7 +4,11 @@ async function request(url, options = {}) {
   const response = await fetch(url, options);
   if (!response.ok) {
     let message = `Request failed with status ${response.status}`;
-    try { const json = await response.json(); message = json.message || message; } catch {}
+    try {
+      const json = await response.json();
+      message = json.message || message;
+      if (json.upstream_message) message = `${message}: ${json.upstream_message}`;
+    } catch {}
     throw new Error(message);
   }
   return response.json();
