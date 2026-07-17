@@ -17,11 +17,13 @@ export const upload = multer({
   },
 });
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const cloudinaryConfig = {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.Cloud_name,
+  api_key: process.env.CLOUDINARY_API_KEY || process.env.API_key,
+  api_secret: process.env.CLOUDINARY_API_SECRET || process.env.API_secret,
+};
+
+cloudinary.config(cloudinaryConfig);
 
 const getTimestamp = () => ({
   time: new Date().toLocaleTimeString(),
@@ -38,10 +40,51 @@ const normaliseMatchedStudent = (student, index) => ({
   face_crop: student.face_crop || student.crop_url || student.face_image || student.image || null,
 });
 
+const missingCloudinaryKeys = () => Object.entries(cloudinaryConfig)
+  .filter(([, value]) => !value)
+  .map(([key]) => key);
+
+const getExternalApiError = (error) => {
+  if (!axios.isAxiosError(error)) return null;
+
+  if (error.response) {
+    const upstreamMessage = error.response.data?.message || error.response.data?.error || error.response.statusText;
+    return {
+      status: 502,
+      payload: {
+        message: 'Face recognition service failed while processing the attendance image',
+        upstream_status: error.response.status,
+        upstream_message: upstreamMessage,
+      },
+    };
+  }
+
+  return {
+    status: 503,
+    payload: {
+      message: 'Face recognition service is unavailable. Check EXTERNAL_API_URL and that the service is running.',
+      error: error.message,
+    },
+  };
+};
+
 export const markAttendance = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'Image file is required' });
+    }
+
+    const externalApiUrl = process.env.EXTERNAL_API_URL;
+    if (!externalApiUrl) {
+      return res.status(500).json({ message: 'EXTERNAL_API_URL is not configured' });
+    }
+
+    const missingKeys = missingCloudinaryKeys();
+    if (missingKeys.length) {
+      return res.status(500).json({
+        message: 'Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.',
+        missing_keys: missingKeys,
+      });
     }
 
     const { id = 'class-photo', name = 'Class photo', course = 'General' } = req.body;
@@ -51,16 +94,18 @@ export const markAttendance = async (req, res) => {
       `data:${req.file.mimetype};base64,${base64Image}`
     );
 
-    const externalApiUrl = process.env.EXTERNAL_API_URL;
-    if (!externalApiUrl) {
-      return res.status(500).json({ message: 'EXTERNAL_API_URL is not configured' });
-    }
+    const faceApiForm = new FormData();
+    faceApiForm.append('id', id);
+    faceApiForm.append('name', name);
+    faceApiForm.append('course', course);
+    faceApiForm.append(
+      'image',
+      new Blob([req.file.buffer], { type: req.file.mimetype }),
+      req.file.originalname || 'class-photo'
+    );
 
-    const response = await axios.post(externalApiUrl, {
-      id,
-      name,
-      course,
-      image: uploadResponse.secure_url,
+    const response = await axios.post(externalApiUrl, faceApiForm, {
+      headers: faceApiForm.getHeaders?.(),
     });
 
     const matchedStudents = Array.isArray(response.data?.matched_students)
@@ -79,6 +124,12 @@ export const markAttendance = async (req, res) => {
       },
     });
   } catch (error) {
+    const externalApiError = getExternalApiError(error);
+    if (externalApiError) {
+      console.error('markAttendance upstream error:', error.message);
+      return res.status(externalApiError.status).json(externalApiError.payload);
+    }
+
     console.error('markAttendance error:', error);
     res.status(500).json({ message: 'Error processing attendance image', error: error.message });
   }
