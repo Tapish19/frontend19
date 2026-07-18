@@ -80,8 +80,17 @@ def init_super_res_model():
         )
         return None
 
-# Initialize super resolution model if enabled
+def init_face_recognition_model():
+    """Initialize and return the InsightFace recognition model once per process."""
+    logging.info("Initializing Face Recognition Model...")
+    model = FaceAnalysis()
+    model.prepare(ctx_id=-1, det_size=(640, 640))
+    return model
+
+
+# Initialize models once at module load so requests can reuse them.
 super_res_model = init_super_res_model() if USE_SUPER_RESOLUTION else None
+face_recognition_model = init_face_recognition_model()
 
 def enhance_image(image):
     """
@@ -358,9 +367,7 @@ def process_face_image(name, enrollment_id, image: Image.Image, use_tile_detecti
     Unknown faces are not marked as present or absent.
     Optionally saves face crop images for manual inspection.
     """
-    logging.info("Initializing Face Recognition Model for query image...")
-    model = FaceAnalysis()
-    model.prepare(ctx_id=-1, det_size=(640, 640))
+    model = face_recognition_model
 
     logging.info("Fetching known faces from MongoDB for comparison...")
     mongo_url = os.getenv('MONGO_URL')
