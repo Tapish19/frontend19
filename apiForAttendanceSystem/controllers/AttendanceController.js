@@ -53,6 +53,21 @@ const missingCloudinaryKeys = () => Object.entries(cloudinaryConfig)
   .filter(([, value]) => !value)
   .map(([key]) => key);
 
+const isUpstreamRateLimit = (error) => axios.isAxiosError(error) && error.response?.status === 429;
+
+const getRetryAfterSeconds = (error) => {
+  const retryAfter = error.response?.headers?.['retry-after'];
+  if (!retryAfter) return null;
+
+  const numericRetryAfter = Number(retryAfter);
+  if (Number.isFinite(numericRetryAfter)) return numericRetryAfter;
+
+  const retryDate = new Date(retryAfter);
+  if (Number.isNaN(retryDate.getTime())) return null;
+
+  return Math.max(0, Math.ceil((retryDate.getTime() - Date.now()) / 1000));
+};
+
 const getExternalApiError = (error) => {
   if (!axios.isAxiosError(error)) return null;
 
@@ -65,10 +80,11 @@ const getExternalApiError = (error) => {
       status: isRateLimited ? 429 : 502,
       payload: {
         message: isRateLimited
-          ? 'Face recognition service is rate limited. Please wait a minute before trying again.'
+          ? 'Face recognition service quota is currently exhausted. You can still add students manually below, or switch EXTERNAL_API_URL to an available face-recognition service.'
           : 'Face recognition service failed while processing the attendance image',
         upstream_status: upstreamStatus,
         upstream_message: upstreamMessage,
+        retry_after_seconds: isRateLimited ? getRetryAfterSeconds(error) : undefined,
       },
     };
   }
@@ -115,10 +131,30 @@ export const markAttendance = async (req, res) => {
       course,
     });
 
-    const response = await axios.post(externalApiUrl, externalPayload, {
-      maxBodyLength: Infinity,
-      maxContentLength: Infinity,
-    });
+    let response;
+    try {
+      response = await axios.post(externalApiUrl, externalPayload, {
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+      });
+    } catch (error) {
+      if (!isUpstreamRateLimit(error)) throw error;
+
+      const externalApiError = getExternalApiError(error);
+      console.warn('markAttendance upstream rate limit:', error.message);
+      return res.status(200).json({
+        message: externalApiError.payload.message,
+        data: {
+          image: uploadResponse.secure_url,
+          course,
+          matched_students: [],
+          recognition_unavailable: true,
+          upstream_status: externalApiError.payload.upstream_status,
+          upstream_message: externalApiError.payload.upstream_message,
+          retry_after_seconds: externalApiError.payload.retry_after_seconds,
+        },
+      });
+    }
 
     const matchedStudents = Array.isArray(response.data?.matched_students)
       ? response.data.matched_students.map(normaliseMatchedStudent)
@@ -133,6 +169,7 @@ export const markAttendance = async (req, res) => {
         image: uploadResponse.secure_url,
         course,
         matched_students: matchedStudents,
+        recognition_unavailable: false,
       },
     });
   } catch (error) {

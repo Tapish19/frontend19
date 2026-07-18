@@ -45,6 +45,7 @@ function AttendanceForm() {
 
       const res = await markAttendance(fd);
       const result = res?.data || {};
+      const responseMessage = res?.message;
       const students = Array.isArray(result?.matched_students)
         ? result.matched_students.map((student, index) => ({
             ...student,
@@ -60,8 +61,17 @@ function AttendanceForm() {
       if (students.length > 0) {
         setMessage(`Review ${students.length} detected face match(es), then confirm attendance.`);
         setMessageType('success');
+      } else if (result?.recognition_unavailable) {
+        const retryText = result.retry_after_seconds
+          ? ` Try automatic detection again in about ${Math.ceil(result.retry_after_seconds / 60)} minute(s).`
+          : '';
+        setMessage(
+          `${result?.message || responseMessage || 'Automatic face recognition is temporarily unavailable.'}${retryText} `
+          + 'The photo is saved, so you can add students manually and confirm attendance now.'
+        );
+        setMessageType('warning');
       } else {
-        setMessage(result?.message || 'No registered students matched this class photo. Add students manually if needed.');
+        setMessage(result?.message || responseMessage || 'No registered students matched this class photo. Add students manually if needed.');
         setMessageType('error');
       }
       setForm(EMPTY);
